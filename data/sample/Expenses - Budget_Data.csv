@@ -1,0 +1,13 @@
+Name,Amount,Type,Date
+Savings,500.0,Savings,01/01/2023
+Rent,10000,Payment,01/01/2023
+Utilities,1,Payment,01/01/2023
+Internet,20,Payment,01/01/2023
+Groceries,400.0,Payment,01/01/2023
+Eat Out,400.0,Payment,01/01/2023
+Savings,500.0,Savings,02/01/2023
+Rent,5000,Payment,02/01/2023
+Utilities,1,Payment,02/01/2023
+Internet,20,Payment,02/01/2023
+Groceries,400.0,Payment,02/01/2023
+Eat Out,400.0,Payment,02/01/2023
