@@ -1,3 +1,4 @@
+from pathlib import Path
 import dash
 
 from dash import dash_table, html, Input, Output, State, callback
@@ -13,9 +14,8 @@ dash.register_page(__name__,
                    name='Income Data Editor')
 
 # Load data
-file_dir = "data"
-file_name = "Expenses - Income_Data"
-file_path = os.path.join(file_dir, file_name) + ".csv"
+data_fp = Path(__file__).parents[2] / "data"
+file_path = data_fp / "Expenses - Income_Data.csv"
 
 
 def layout():

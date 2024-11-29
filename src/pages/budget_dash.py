@@ -1,5 +1,6 @@
 import datetime
 import warnings
+from pathlib import Path
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # dash and plotly
@@ -84,18 +85,23 @@ class MoneyDash:
 
     def load_data(self):
         # Load data
-        self.df_expense = pd.read_csv(r"data\Expenses - Expense_Data.csv", dtype={"Name": "object",
-                                                                                  "Amount": "float",
-                                                                                  "Type": "category",
-                                                                                  "Date": "object"})
-        self.df_income = pd.read_csv(r"data\Expenses - Income_Data.csv", dtype={"Name": "object",
-                                                                                "Amount": "float",
-                                                                                "Type": "category",
-                                                                                "Date": "object"})
-        self.df_budget = pd.read_csv(r"data\Expenses - Budget_Data.csv", dtype={"Name": "object",
-                                                                                "Amount": "float",
-                                                                                "Type": "category",
-                                                                                "Date": "object"})
+        data_fp = Path(__file__).parents[2] / "data"
+        expense_fp = data_fp / "Expenses - Expense_Data.csv"
+        income_fp = data_fp / "Expenses - Income_Data.csv"
+        budget_fp = data_fp / "Expenses - Budget_Data.csv"
+
+        self.df_expense = pd.read_csv(expense_fp, dtype={"Name": "object",
+                                                         "Amount": "float",
+                                                         "Type": "category",
+                                                         "Date": "object"})
+        self.df_income = pd.read_csv(income_fp, dtype={"Name": "object",
+                                                       "Amount": "float",
+                                                       "Type": "category",
+                                                       "Date": "object"})
+        self.df_budget = pd.read_csv(budget_fp, dtype={"Name": "object",
+                                                       "Amount": "float",
+                                                       "Type": "category",
+                                                       "Date": "object"})
         # expense data
         self.df_expense["Date"] = pd.to_datetime(self.df_expense["Date"])
         self.df_expense["Type"] = self.df_expense["Type"].astype("category")

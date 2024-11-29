@@ -1,10 +1,12 @@
+from pathlib import Path
+
 import datetime
 import os
 import time
 
-file_dir = "data"
-file_name = "Expenses - Expense_Data"
-file_path = os.path.join(file_dir, file_name) + ".csv"
+data_fp = Path(__file__).parents[1] / "data"
+file_name = "Expenses - Expense_Data.csv"
+file_path = data_fp / file_name
 
 type_dict = {'0': 'Savings',
              '1': 'Rent',
@@ -28,7 +30,7 @@ def insert_line(line: str, backup: bool = True):
 def backup():
     try:
         backup_file_name = f"{file_name}_{datetime.datetime.today().strftime('%Y%m%d%H%M%S')}.csv"
-        backup_file_dir = os.path.join(file_dir, "backup")
+        backup_file_dir = data_fp / "backup"
         if not os.path.isdir(backup_file_dir):
             os.mkdir(backup_file_dir)
         with open(os.path.join(backup_file_dir, backup_file_name), "w") as file:
@@ -37,7 +39,7 @@ def backup():
                 print("Data successfully backed up.\n")
                 return True
     except Exception as e:
-        print(e + "\n")
+        print(str(e) + "\n")
         print("Data backup failed.\n")
         return False
 

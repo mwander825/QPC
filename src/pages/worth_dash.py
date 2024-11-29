@@ -1,3 +1,4 @@
+from pathlib import Path
 import datetime
 
 # dash and plotly
@@ -34,7 +35,9 @@ class WorthDash:
         self.load_data()
 
     def load_data(self):
-        self.df_worth = pd.read_csv(r"data\Quarterly_Worth.csv")
+        data_fp = Path(__file__).parents[2] / "data"
+        file_path = data_fp / "Quarterly_Worth.csv"
+        self.df_worth = pd.read_csv(file_path)
 
         self.df_worth["Date"] = pd.to_datetime(self.df_worth["Date"])
         self.df_worth["Year-Month"] = pd.to_datetime(self.df_worth["Date"]).dt.to_period('M')
