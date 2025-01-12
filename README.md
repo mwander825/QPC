@@ -12,7 +12,7 @@ This hinges on the logging of every single expense you have, so no cheating!
 * Run **app.py** to start the Dash dashboard
 
 ## Usage
-The **insert_expense.py** can be used to add a new expense to your **Expenses - Expense_Data.csv** file.
+The **insert_expense.py** script can be used to add a new expense to your **Expenses - Expense_Data.csv** file.
 There are different categories for spending, which I usually define as:
 1. Savings: Savings (treated as an expense)
 2. Rent: Rent (I may change this to a more general "Housing")
