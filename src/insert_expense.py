@@ -81,7 +81,13 @@ def insert_term(insert_input):
     line_elements.append(expense_input)
 
     # confirming information to insert line into data .csv
-    expense_input = input(f"""\nConfirm expense line (y/n):
+    expense_input = input(f"""\nConfirm expense line (y/n/q):
+Name: {line_elements[0]}
+Amount: {line_elements[1]}
+Type: {line_elements[2]}
+Date: {line_elements[3]}\n""")
+    while expense_input not in {'y', 'n', 'q'}:
+        expense_input = input(f"""\nConfirm expense line (y/n/q):
 Name: {line_elements[0]}
 Amount: {line_elements[1]}
 Type: {line_elements[2]}
