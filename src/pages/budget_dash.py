@@ -20,7 +20,6 @@ dash.register_page(__name__, path="/",
                    title='Money Dashboard',
                    name='Money Dashboard')
 
-
 class MoneyDash:
     def __init__(self):
         self.current_year = pd.Timestamp.now().year
@@ -85,7 +84,9 @@ class MoneyDash:
 
     def load_data(self):
         # Load data
-        data_fp = Path(__file__).parents[2] / "data"
+        # data_fp = Path(__file__).parents[2] / "data"
+        data_fp = Path("data/")
+
         expense_fp = data_fp / "Expenses - Expense_Data.csv"
         income_fp = data_fp / "Expenses - Income_Data.csv"
         budget_fp = data_fp / "Expenses - Budget_Data.csv"
@@ -156,6 +157,10 @@ class MoneyDash:
             month_group_sums = self.df_expense[self.df_expense["FOM"].between(start_date, end_date)].groupby(["Year-Month", "Type"], observed=False)["Amount"].sum().round(2).reindex(
                 self.sorted_names, level='Type').reset_index()
             month_group_sums["Month-Year"] = month_group_sums["Year-Month"].dt.strftime("%b-%Y")
+
+            # mean agg
+            month_group_means = month_group_sums.groupby("Type", observed=False)["Amount"].mean().round(2).reindex(
+                self.sorted_names, level='Type').reset_index()
 
             # create main time-series expense figure
             fig = px.bar(month_group_sums, x='Month-Year', y='Amount', color='Type', barmode='stack',
@@ -230,6 +235,11 @@ class MoneyDash:
                            showlegend=False))
             surplus_fig.update_layout()
 
+            # mean type plot
+            mean_fig = px.bar(month_group_means, x="Type", y="Amount", color="Type",
+                             color_discrete_map=self.color_dict,
+                             hover_data={'Type': False})
+
         elif freq == 'Yearly':
             # clip'd
             df_all_group_sum = self.df_all_group_sum[self.df_all_group_sum["FOM"].between(start_date, end_date)]
@@ -290,7 +300,7 @@ class MoneyDash:
         else:
             raise ValueError("Value must be one of {'Monthly', 'Yearly', 'Weekly'}")
 
-        return fig, surplus_fig
+        return fig, surplus_fig, mean_fig
 
     def create_ratios_fig(self, start_date, end_date):
         start_date = pd.Timestamp(start_date)
@@ -439,7 +449,7 @@ def layout():
     today_min = date(tonight_tonight.year, tonight_tonight.month, 1)
     today_max = date(tonight_tonight.year, tonight_tonight.month, today_max)
 
-    range_spend_fig, range_surplus_fig = money_dash.create_range_spend_figs(start_date, end_date)
+    range_spend_fig, range_surplus_fig, range_mean_fig = money_dash.create_range_spend_figs(start_date, end_date)
     range_ratios_fig = money_dash.create_ratios_fig(minimum_date, maximum_date)
     cat_spend_fig = money_dash.create_cat_spend_fig(minimum_date, maximum_date)
     name_spend_fig = money_dash.create_name_spend_fig(minimum_date, maximum_date)
@@ -451,7 +461,7 @@ def layout():
         html.H1(children="Budgeting"),
 
         html.Div(children=[
-            html.H2("""Spending Over Time (Stacked)"""),
+            html.H2("""Spending over Time (Stacked)"""),
             html.Div(children=[
                 dcc.Dropdown(options=year_list, value=minimum_year, clearable=False, id='spending-year-min-drop', style={'width': "80%"}),
                 dcc.Dropdown(options=year_list, value=maximum_year, clearable=False, id='spending-year-max-drop', style={'width': "80%"}),
@@ -465,10 +475,15 @@ def layout():
                 id='spending-range',
                 figure=range_spend_fig
             ),
-            html.H2("""Surplus Over Time"""),
+            html.H2("""Surplus over Time"""),
             dcc.Graph(
                 id='surplus-range',
                 figure=range_surplus_fig
+            ),
+            html.H2("""Mean over Time"""),
+            dcc.Graph(
+                id='mean-range',
+                figure=range_mean_fig,
             )
         ]),
         html.Div(children=[
@@ -661,6 +676,7 @@ def update_ratios_figure(start_date, end_date, month_iso):
 @callback(
     Output('spending-range', 'figure'),
     Output('surplus-range', 'figure'),
+    Output('mean-range', 'figure'),
     Input('spending-year-min-drop', 'value'),
     Input('spending-year-max-drop', 'value'),
     Input('spending-month-min-drop', 'value'),
@@ -674,3 +690,9 @@ def update_spending_figure(start_year, end_year, start_month, end_month, frequen
         iso_date = datetime.datetime.strptime(month_iso, "%b-%Y").date()
         start_date, end_date = (iso_date, iso_date)
     return money_dash.create_range_spend_figs(start_date, end_date, frequency)
+
+if __name__ == "__main__":
+    pass
+    # money_dash = MoneyDash()
+    # df = money_dash.df_expense
+    # df[(df["Type"] == "Grocery") & (df["Date"].between("2025-01-01", "2025-01-31"))]
