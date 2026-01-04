@@ -34,6 +34,17 @@ class MoneyDash:
                            "TransportationT": "Brown",
                            "HealthWell": "cornsilk",
                            "Other": "gray"}
+        #
+        self.bg_color_dict = {"Savings": "#86c386",
+                           "Rent": "#c38fc3",
+                           "Utilities": "#ffdbe1",
+                           "Grocery": "#fdfdb0",
+                           "Food": "#ffd17d",
+                           "Shop": "#ffb0b0",
+                           "RecEnt": "#a4ffff",
+                           "TransportationT": "#b66a6a",
+                           "HealthWell": "#fffdf3",
+                           "Other": "#d9d9d9"}
 
         self.sorted_names = ("Savings", "Rent", "Utilities", "Grocery", "Food",
                              "Shop", "RecEnt", "TransportationT", "HealthWell", "Other")
@@ -55,11 +66,11 @@ class MoneyDash:
         self.necesse_dict = {"Rent": "Needs",
                              "Utilities": "Needs",
                              "Grocery": "Needs",
-                             "Food": "Needs",
+                             "Food": "Wants",
                              "Savings": "Savings",
                              "Shop": "Wants",
                              "RecEnt": "Wants",
-                             "TransportationT": "Wants",
+                             "TransportationT": "Needs",
                              "HealthWell": "Needs",
                              "Other": "Wants"}
 
@@ -208,20 +219,20 @@ class MoneyDash:
                                          legendgroup="Surplus",
                                          showlegend=False if idx > 0 else True))
                 fig.add_trace(go.Scatter(x=[month_year, month_year],
-                                         y=[month_spend_total, month_budget_total],
+                                         y=[month_spend_total, month_budget_total] if month_budget_total > month_spend_total else [month_budget_total, month_budget_total],
                                          mode='lines',
                                          line=dict(color='darkgray', width=2),
-                                         name="Left",
+                                         name="Budgeted Remains",
                                          hoverinfo="skip",
-                                         hovertext=f"{round(month_budget_total - month_spend_total, 2)} ({days_remaining})",
-                                         hovertemplate=f"${round(month_budget_total - month_spend_total, 2)} ({days_remaining})<extra></extra>",
-                                         legendgroup="Left",
+                                         hovertext=f"{max(0, round(month_budget_total - month_spend_total, 2))} ({days_remaining})",
+                                         hovertemplate=f"${max(0, round(month_budget_total - month_spend_total, 2))} ({days_remaining})<extra></extra>",
+                                         legendgroup="Budgeted Remains",
                                          showlegend=False if idx > 0 else True))
 
             # fig.add_hrect(y0=m_expenses, y1=m_income, line_width=0, fillcolor="red", opacity=0.1)
 
             # make y-max 500 more than the highest income month
-            fig.update_layout(yaxis_range=(0, df_all_group_sum["Income_Total"].max() + 500), hovermode="x unified")
+            fig.update_layout(yaxis_range=(0, df_all_group_sum["Expense_Total"].max() + 500), hovermode="x unified")
 
             # create cumulative sum surplus figure over time
             surplus_y = (df_all_group_sum["Income_Total"] - df_all_group_sum[
@@ -279,7 +290,7 @@ class MoneyDash:
                                      name='Budget', line=dict(color='skyblue', width=4, dash='dash'),
                                      hovertemplate="%{y:$.2f}<extra></extra>"))
 
-            fig.update_layout(yaxis_range=(0, df_all_group_sum["Income_Total"].max() + 500), hovermode="x unified")
+            fig.update_layout(yaxis_range=(0, df_all_group_sum["Expense_Total"].max() + 500), hovermode="x unified")
 
             # for now...
             # create cumulative sum surplus figure over time
@@ -301,6 +312,33 @@ class MoneyDash:
             raise ValueError("Value must be one of {'Monthly', 'Yearly', 'Weekly'}")
 
         return fig, surplus_fig, mean_fig
+
+    def create_quota_fig(self, start_date, end_date):
+        sorted_names = [n for n in self.sorted_names if n != "Shop"]
+
+        colors = [v for k,v in self.color_dict.items() if k != "Shop"]
+        bg_colors =  [v for k,v in self.bg_color_dict.items() if k != "Shop"]
+
+        # quota type plot
+        # group by type and aggregate for each month
+        month_group_sums = \
+        self.df_expense[(self.df_expense["FOM"].between(start_date, end_date))  & (self.df_expense["Type"] != "Shop")].groupby(["Year-Month", "Type"],
+                                                                                      observed=True)[
+            "Amount"].sum().round(2).reindex(
+            self.sorted_names, level='Type').reset_index()
+        month_group_sums["Month-Year"] = month_group_sums["Year-Month"].dt.strftime("%b-%Y")
+
+        month_budget = self.df_budget[self.df_budget["FOM"].between(start_date, end_date)].groupby(["Year-Month", "Type"], observed=False)["Amount"].sum().round(2).reindex(
+                sorted_names, level='Type').reset_index()
+        # print(month_group_sums)
+        # print(month_budget)
+
+        quota_fig = go.Figure(data=[
+            go.Bar(x=month_group_sums["Type"], y=month_group_sums["Amount"], marker_color=colors, showlegend=False),
+            go.Bar(x=month_budget["Type"], y=month_budget["Amount"], marker_color=bg_colors, showlegend=False)
+        ])
+
+        return quota_fig
 
     def create_ratios_fig(self, start_date, end_date):
         start_date = pd.Timestamp(start_date)
@@ -450,6 +488,7 @@ def layout():
     today_max = date(tonight_tonight.year, tonight_tonight.month, today_max)
 
     range_spend_fig, range_surplus_fig, range_mean_fig = money_dash.create_range_spend_figs(start_date, end_date)
+    range_quota_fig = money_dash.create_quota_fig(minimum_date, maximum_date)
     range_ratios_fig = money_dash.create_ratios_fig(minimum_date, maximum_date)
     cat_spend_fig = money_dash.create_cat_spend_fig(minimum_date, maximum_date)
     name_spend_fig = money_dash.create_name_spend_fig(minimum_date, maximum_date)
@@ -484,6 +523,24 @@ def layout():
             dcc.Graph(
                 id='mean-range',
                 figure=range_mean_fig,
+            )
+        ]),
+        html.Div(children=[
+            html.H2("""Budget Quotas"""),
+            html.Div(children=[
+                dcc.DatePickerRange(
+                    id='quota-date-picker-range',
+                    start_date=today_min,
+                    min_date_allowed=minimum_date,
+                    max_date_allowed=maximum_date,
+                    end_date=today_max
+                ),
+                dcc.Dropdown(options=month_year_list, value=None, clearable=True, id='quota-month-iso-drop',
+                             style={'width': "33%"}),
+            ], style={'display': 'block', 'width': '100%'}),
+            dcc.Graph(
+                id='spending-quota',
+                figure=range_quota_fig
             )
         ]),
         html.Div(children=[
@@ -671,6 +728,21 @@ def update_ratios_figure(start_date, end_date, month_iso):
         end_date = datetime.datetime(iso_year, iso_month, last).date()
     return money_dash.create_ratios_fig(start_date, end_date)
 
+@callback(
+      Output('spending-quota', 'figure'),
+      Input('quota-date-picker-range', 'start_date'),
+      Input('quota-date-picker-range', 'end_date'),
+      Input('quota-month-iso-drop', 'value'))
+def update_cat_figure(start_date, end_date, month_iso):
+    start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
+    end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
+    if month_iso is not None and isinstance(month_iso, str):
+        iso_date = datetime.datetime.strptime(month_iso, "%b-%Y").date()
+        iso_month, iso_year = iso_date.month, iso_date.year
+        _, last = calendar.monthrange(iso_year, iso_month)
+        start_date = datetime.datetime(iso_year, iso_month, 1).date()
+        end_date = datetime.datetime(iso_year, iso_month, last).date()
+    return money_dash.create_quota_fig(start_date, end_date)
 
 # multi-output callbacks?
 @callback(
